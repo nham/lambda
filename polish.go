@@ -48,7 +48,6 @@ func makeTree(val string, children []*OTree) *OTree {
     // actually, we should probably use a real stack datastructure
     // instead of a slice. then have a general function for
     // walking the stack, populating the linked list backwards?
-    fmt.Println(len(children))
     l := list.New()
     if len(children) > 0 {
         // recall the slice is in reverse order. yeah this shouldve been taken
@@ -77,10 +76,12 @@ func parse(s string, ops map[rune]*Operator, vars map[rune]bool) (*OTree, error)
             // pop op.arity values off the stack. saving them
             // backwards in a linked list, and pass that to makeTree
             fmt.Println("arity: ", op.arity)
-            stack = append(stack[:curr-2],
+            stack = append(stack[:curr - op.arity],
                     makeTree(string(sym), stack[curr - op.arity : curr]))
+            fmt.Println(" stack is now: ", stack)
         } else if vars[sym] {
             stack = append(stack, makeTree(string(sym), nil))
+            fmt.Println(" stack is now: ", stack)
         } else {
             return nil, errors.New("Unrecognized symbol")
         }
@@ -89,14 +90,13 @@ func parse(s string, ops map[rune]*Operator, vars map[rune]bool) (*OTree, error)
     return stack[0], nil
 }
 
-/*      
 func (t *OTree) String() string {
     s := ""
     if t.children != nil && t.children.Front() != nil {
-        s = "(" + t.value + " "
+        s = "(" + t.value
         for n := t.children.Front(); n != nil; n = n.Next() {
             s += " "
-            fmt.Println(n.Value)
+            s += n.Value.(*OTree).String()
         }
         s += ")"
 
