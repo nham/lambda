@@ -40,7 +40,19 @@ func makeTree(val string, children []*OTree) *Tree {
     // actually, we should probably use a real stack datastructure
     // instead of a slice. then have a general function for
     // walking the stack, populating the linked list backwards?
-    return &OTree{val, nil}
+    fmt.Println(len(children))
+    var l list.List
+    if len(children) > 0 {
+        l = list.New()
+        // recall the slice is in reverse order. yeah this shouldve been taken
+        // care of prior calling this function, but I dont want to do it properly
+        // now. just do it in reverse order.
+        for i, v := range children {
+            l.PushFront(v)
+        }
+    }
+
+    return &OTree{val, l}
 }
 
 func parse(s string, ops, vars) (*OTree, error) {
@@ -56,7 +68,7 @@ func parse(s string, ops, vars) (*OTree, error) {
             // pop op.arity values off the stack. saving them
             // backwards in a linked list, and pass that to makeTree
             stack = append(stack[:curr-2],
-                makeTree(string(v), stack[curr-1], stack[curr-2]))
+                makeTree(string(v), stack[curr-op.arity:curr])
         } else if vars[sym] {
             stack = append(stack, makeTree(string(v), nil))
         } else {
