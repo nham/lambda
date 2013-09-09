@@ -2,13 +2,13 @@ package main
 
 import (
     "fmt"
-    "strings"
+    "errors"
     "container/list"
 )
 
 type OTree struct {
     value string
-    children *List
+    children *list.List
 }
 
 type Operator struct {
@@ -19,10 +19,18 @@ type Operator struct {
 
 func main() {
     // input is a sequence of runes
-    var vars map[rune]bool
-    var ops map[rune]Operator
+    vars := make(map[rune]bool)
+    ops := make(map[rune]*Operator)
+    ops['$'] = &Operator{'$', 3}
+    vars['a'] = true
+    vars['b'] = true
+    vars['c'] = true
 
-    t, err := parse(inp, ops, vars)
+    t, err := parse("$abc", ops, vars)
+    if err != nil {
+        fmt.Println(err)
+    }
+    fmt.Println(t)
 
 }
 
@@ -34,20 +42,20 @@ func reverse(s string) string {
     return string(runes)
 }
 
-func makeTree(val string, children []*OTree) *Tree {
+func makeTree(val string, children []*OTree) *OTree {
     // children is a slice of OTrees. we need to build
     // a linked list in the order
     // actually, we should probably use a real stack datastructure
     // instead of a slice. then have a general function for
     // walking the stack, populating the linked list backwards?
     fmt.Println(len(children))
-    var l list.List
+    l := list.New()
     if len(children) > 0 {
-        l = list.New()
         // recall the slice is in reverse order. yeah this shouldve been taken
         // care of prior calling this function, but I dont want to do it properly
         // now. just do it in reverse order.
-        for i, v := range children {
+        for _, v := range children {
+            fmt.Println("pushing", v)
             l.PushFront(v)
         }
     }
@@ -55,28 +63,48 @@ func makeTree(val string, children []*OTree) *Tree {
     return &OTree{val, l}
 }
 
-func parse(s string, ops, vars) (*OTree, error) {
+func parse(s string, ops map[rune]*Operator, vars map[rune]bool) (*OTree, error) {
     stack := make([]*OTree, 0)
     curr := 0
 
     for _, sym := range reverse(s) {
-        curr = len(tree_stack)
+        fmt.Println("sym = ", string(sym))
+        curr = len(stack)
 
         if op, ok := ops[sym]; ok {
             // this is an operator, parse the whole subtree
             // this should actually be like:
             // pop op.arity values off the stack. saving them
             // backwards in a linked list, and pass that to makeTree
+            fmt.Println("arity: ", op.arity)
             stack = append(stack[:curr-2],
-                makeTree(string(v), stack[curr-op.arity:curr])
+                    makeTree(string(sym), stack[curr - op.arity : curr]))
         } else if vars[sym] {
-            stack = append(stack, makeTree(string(v), nil))
+            stack = append(stack, makeTree(string(sym), nil))
         } else {
-            return nil, error.New("Unrecognized symbol")
+            return nil, errors.New("Unrecognized symbol")
         }
     }
 
-    return tree_stack[0], nil
+    return stack[0], nil
+}
+
+/*      
+func (t *OTree) String() string {
+    s := ""
+    if t.children != nil && t.children.Front() != nil {
+        s = "(" + t.value + " "
+        for n := t.children.Front(); n != nil; n = n.Next() {
+            s += " "
+            fmt.Println(n.Value)
+        }
+        s += ")"
+
+    } else {
+        s = t.value
+    }
+
+    return s
 }
 
 /*
@@ -100,19 +128,4 @@ func (t *OTree) DFS() map[string]bool {
     return vars
 }
 
-func (t *Tree) String() string {
-    s := ""
-    if t.value == `\` || t.value == "A" {
-        s = "(" + t.value + " "
-        if t.left != nil { s += t.left.String() }
-        s += " "
-        if t.right != nil { s += t.right.String() }
-        s += ")"
-
-    } else {
-        s = t.value
-    }
-
-    return s
-}
 */
